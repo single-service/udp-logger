@@ -36,10 +36,10 @@ LOGGING = {
         "rabbit-logger": {
             "level": "INFO",
             "class": "rabbit_logger.logger.async_handler.AsyncLoggerHandler",  # Для асинхронного логгера или 'apmlogger.logger.sync_handler.SyncLoggerHandler' для синхронного
-            "host": "localhost",
-            "port": 5672,
-            "user": "user",
-            "password": "password",
+            "rabbit_host": "localhost",
+            "rabbit_port": 5672,
+            "rabbit_user": "user",
+            "rabbit_password": "password",
             "server_name": "my_server",  # Название вашего сервера
         },
         "console": {
