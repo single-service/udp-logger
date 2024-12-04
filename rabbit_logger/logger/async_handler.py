@@ -12,12 +12,11 @@ class AsyncLoggerHandler(BaseLoggerHandler):
         self, rabbit_host="localhost", rabbit_port=5672, rabbit_user="", rabbit_password="", server_name="python"
     ):
         super().__init__(rabbit_host, rabbit_port, rabbit_user, rabbit_password, server_name)
-        self.loop = asyncio.get_event_loop()
         self.connection = None
         self.channel = None
 
         # Подключение к RabbitMQ
-        self.loop.run_until_complete(self.connect())
+        asyncio.create_task(self.connect())
 
     async def connect(self):
         try:
@@ -26,7 +25,6 @@ class AsyncLoggerHandler(BaseLoggerHandler):
                 port=self.port,
                 login=self.user,
                 password=self.password,
-                loop=self.loop,
             )
             self.channel = await self.connection.channel()
             await self.channel.declare_queue(self.queue, durable=True)
@@ -39,10 +37,9 @@ class AsyncLoggerHandler(BaseLoggerHandler):
         if not self.channel:
             logging.warning("AsyncLoggerHandler is not initialized properly; log message dropped.")
             return
-        if not self.loop.is_running():
-            self.loop.run_until_complete(self._emit_async(record))
-        else:
-            asyncio.run_coroutine_threadsafe(self._emit_async(record), self.loop)
+
+        # Запускаем асинхронную задачу в текущем событийном цикле
+        asyncio.create_task(self._emit_async(record))
 
     async def _emit_async(self, record):
         try:
@@ -54,5 +51,5 @@ class AsyncLoggerHandler(BaseLoggerHandler):
 
     def close(self):
         if self.connection:
-            self.loop.run_until_complete(self.connection.close())
+            asyncio.create_task(self.connection.close())
         super().close()
