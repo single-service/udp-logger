@@ -16,26 +16,34 @@ class SyncLoggerHandler(BaseLoggerHandler):
         self, rabbit_host="localhost", rabbit_port=5672, rabbit_user="", rabbit_password="", server_name="python"
     ):
         super().__init__(rabbit_host, rabbit_port, rabbit_user, rabbit_password, server_name)
-        try:
-            # Подключение к RabbitMQ
-            self.connection = pika.BlockingConnection(
-                pika.ConnectionParameters(
-                    host=self.host,
-                    port=self.port,
-                    credentials=pika.PlainCredentials(self.user, self.password),
+        self.connection = None
+        self.channel = None
+
+    def _ensure_connection(self):
+        """
+        Ленивая инициализация соединения и канала.
+        """
+        if not self.connection or not self.channel:
+            try:
+                self.connection = pika.BlockingConnection(
+                    pika.ConnectionParameters(
+                        host=self.host,
+                        port=self.port,
+                        credentials=pika.PlainCredentials(self.user, self.password),
+                    )
                 )
-            )
-            self.channel = self.connection.channel()
-            self.channel.queue_declare(queue=self.queue, durable=True)
-        except Exception as e:
-            self.connection = None
-            self.channel = None
-            logging.error(f"SyncLoggerHandler initialization failed: {e}")
+                self.channel = self.connection.channel()
+                self.channel.queue_declare(queue=self.queue, durable=True)
+            except Exception as e:
+                self.connection = None
+                self.channel = None
+                logging.error(f"SyncLoggerHandler failed to initialize connection: {e}")
 
     def emit(self, record):
         """
         Отправляет лог-сообщение в RabbitMQ.
         """
+        self._ensure_connection()
         if not self.channel:
             logging.warning("SyncLoggerHandler is not initialized properly; log message dropped.")
             return
