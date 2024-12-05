@@ -15,9 +15,9 @@ class SyncLoggerHandler(BaseLoggerHandler):
     def __init__(
         self, rabbit_host="localhost", rabbit_port=5672, rabbit_user="", rabbit_password="", server_name="python"
     ):
-        super().__init__(rabbit_host, rabbit_port, rabbit_user, rabbit_password, server_name)
         self.connection = None
         self.channel = None
+        super().__init__(rabbit_host, rabbit_port, rabbit_user, rabbit_password, server_name)
 
     def _ensure_connection(self):
         """
@@ -77,12 +77,10 @@ class SyncLoggerHandler(BaseLoggerHandler):
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            print("--------------")
             logger = logging.getLogger("my_app")  # Имя логгера из LOGGING
             handler = next((h for h in logger.handlers if isinstance(h, cls)), None)
             if not handler:
                 raise RuntimeError(f"{cls.__name__} is not configured in the logger.")
-            print("==========", handler)
             # Создаем временный экземпляр обработчика
             handler = cls(host="localhost", port=5672, user="user", password="password", server_name="my_server")
 
