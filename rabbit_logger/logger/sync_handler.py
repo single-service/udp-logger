@@ -17,8 +17,8 @@ class SyncLoggerHandler(BaseLoggerHandler):
     ):
         self.connection = None
         self.channel = None
-        self._ensure_connection()
         super().__init__(rabbit_host, rabbit_port, rabbit_user, rabbit_password, server_name)
+        self._ensure_connection()
 
     def _ensure_connection(self):
         """
