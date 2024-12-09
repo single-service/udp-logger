@@ -17,33 +17,36 @@ class SyncLoggerHandler(BaseLoggerHandler):
     ):
         self.connection = None
         self.channel = None
+        self._ensure_connection()
         super().__init__(rabbit_host, rabbit_port, rabbit_user, rabbit_password, server_name)
 
     def _ensure_connection(self):
         """
         Ленивая инициализация соединения и канала.
         """
-        if not self.connection or not self.channel:
-            try:
+        try:
+            if not self.connection or self.connection.is_closed:
                 self.connection = pika.BlockingConnection(
                     pika.ConnectionParameters(
                         host=self.host,
                         port=self.port,
                         credentials=pika.PlainCredentials(self.user, self.password),
+                        heartbeat=60,
+                        blocked_connection_timeout=30,  # Таймаут заблокированного соединения
                     )
                 )
+            if not self.channel or self.channel.is_closed:
                 self.channel = self.connection.channel()
                 self.channel.queue_declare(queue=self.queue, durable=True)
-            except Exception as e:
-                self.connection = None
-                self.channel = None
-                logging.error(f"SyncLoggerHandler failed to initialize connection: {e}")
+        except Exception as e:
+            self.connection = None
+            self.channel = None
+            logging.error(f"SyncLoggerHandler failed to initialize connection: {e}")
 
     def emit(self, record):
         """
         Отправляет лог-сообщение в RabbitMQ.
         """
-        self._ensure_connection()
         if not self.channel:
             logging.warning("SyncLoggerHandler is not initialized properly; log message dropped.")
             return
@@ -53,10 +56,10 @@ class SyncLoggerHandler(BaseLoggerHandler):
                 exchange=self.exchange,
                 routing_key=self.queue,
                 body=json.dumps(log_data),
-                properties=pika.BasicProperties(delivery_mode=2),  # Делает сообщение устойчивым
             )
         except Exception as e:
             logging.error(f"SyncLoggerHandler failed to send log: {e}")
+            self.connection = None
 
     def close(self):
         """
