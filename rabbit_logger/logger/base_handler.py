@@ -13,8 +13,8 @@ class BaseLoggerHandler(logging.Handler):
         self.queue = "logs"
         self.exchange = ""
 
-        if not self.user or not self.password:
-            logging.error("RabbitMQ configuration is missing required parameters (user, password)")
+        # if not self.user or not self.password:
+        #     logging.error("RabbitMQ configuration is missing required parameters (user, password)")
 
     @staticmethod
     def format_exception(ei) -> str:

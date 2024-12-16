@@ -35,12 +35,10 @@ LOGGING = {
     "handlers": {
         "rabbit-logger": {
             "level": "INFO",
-            "class": "rabbit_logger.logger.async_handler.AsyncLoggerHandler",  # Для асинхронного логгера или 'apmlogger.logger.sync_handler.SyncLoggerHandler' для синхронного
-            "rabbit_host": "localhost",
-            "rabbit_port": 5672,
-            "rabbit_user": "user",
-            "rabbit_password": "password",
-            "server_name": "my_server",  # Название вашего сервера
+            "class": "rabbit_logger.logger.udp_handler.UDPSyncLoggerHandler",
+            "udp_host": "0.0.0.0",
+            "udp_port": 9999,
+            "server_name": "test",  # Название вашего сервера
         },
         "console": {
             "level": "DEBUG",  # Уровень логов для консоли
@@ -78,18 +76,16 @@ logger.error("Ошибка!")
 Для синхронного мониторинга создайте экземпляр `SyncAPMHandler`:
 
 ```python
-from rabbit_logger.apm.sync_apm import SyncAPMHandler
+from rabbit_logger.apm.udp_apm import UdpAPMHandler
 
 # Создаем обработчик APM
-APMHandler = SyncAPMHandler(
-    rabbit_host="localhost",
-    rabbit_port=5672,
-    rabbit_user="user",
-    rabbit_password="password",
-    server_name="my_server"
+UDPHandler = UdpAPMHandler(
+    udp_host="localhost",
+    udp_port=9999,
+    server_name="test"
 )
 
-@APMHandler.apm
+@UDPHandler.apm
 def my_sync_function():
     print("Выполнение функции...")
     time.sleep(2)

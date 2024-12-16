@@ -3,6 +3,7 @@ import functools
 import inspect
 import json
 import logging
+import threading
 import time
 from uuid import uuid4
 
@@ -12,11 +13,11 @@ from .base_handler import BaseLoggerHandler
 
 
 class SyncLoggerHandler(BaseLoggerHandler):
+    _local = threading.local()  # Общее для всех экземпляров класса
+
     def __init__(
         self, rabbit_host="localhost", rabbit_port=5672, rabbit_user="", rabbit_password="", server_name="python"
     ):
-        self.connection = None
-        self.channel = None
         super().__init__(rabbit_host, rabbit_port, rabbit_user, rabbit_password, server_name)
         self._ensure_connection()
 
@@ -24,50 +25,51 @@ class SyncLoggerHandler(BaseLoggerHandler):
         """
         Ленивая инициализация соединения и канала.
         """
-        try:
-            if not self.connection or self.connection.is_closed:
-                self.connection = pika.BlockingConnection(
+        if not hasattr(self._local, "connection") or self._local.connection is None or self._local.connection.is_closed:
+            try:
+                self._local.connection = pika.BlockingConnection(
                     pika.ConnectionParameters(
                         host=self.host,
                         port=self.port,
                         credentials=pika.PlainCredentials(self.user, self.password),
-                        heartbeat=60,
-                        blocked_connection_timeout=30,  # Таймаут заблокированного соединения
+                        # heartbeat=120,
+                        # blocked_connection_timeout=30,
                     )
                 )
-            if not self.channel or self.channel.is_closed:
-                self.channel = self.connection.channel()
-                self.channel.queue_declare(queue=self.queue, durable=True)
-        except Exception as e:
-            self.connection = None
-            self.channel = None
-            logging.error(f"SyncLoggerHandler failed to initialize connection: {e}")
+                self._local.channel = self._local.connection.channel()
+                self._local.channel.queue_declare(queue=self.queue, durable=True)
+            except Exception as e:
+                self._local.connection = None
+                self._local.channel = None
+                logging.error(f"SyncLoggerHandler failed to initialize connection: {e}")
 
     def emit(self, record):
         """
         Отправляет лог-сообщение в RabbitMQ.
         """
-        if not self.channel:
+        self._ensure_connection()
+        if not hasattr(self._local, "channel") or not self._local.channel:
             logging.warning("SyncLoggerHandler is not initialized properly; log message dropped.")
             return
         try:
             log_data = self.log_data(record)
-            self.channel.basic_publish(
+            self._local.channel.basic_publish(
                 exchange=self.exchange,
                 routing_key=self.queue,
                 body=json.dumps(log_data),
+                properties=pika.BasicProperties(content_type="text/plain"),
             )
         except Exception as e:
             logging.error(f"SyncLoggerHandler failed to send log: {e}")
-            self.connection = None
+            self._local.connection = None  # Сброс соединения
 
     def close(self):
         """
         Закрывает соединение с RabbitMQ.
         """
-        if self.connection:
+        if hasattr(self._local, "connection") and self._local.connection:
             try:
-                self.connection.close()
+                self._local.connection.close()
             except Exception as e:
                 logging.error(f"SyncLoggerHandler failed to close connection: {e}")
         super().close()
