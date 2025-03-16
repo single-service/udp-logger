@@ -23,7 +23,11 @@ class UdpAPMHandler:
         Отправляет APM данные по UDP.
         """
         try:
-            message = json.dumps(data).encode("utf-8")
+            message = json.dumps({
+                "type": "apm",
+                "collection": "apm",
+                "message": data
+            }).encode("utf-8")
             self.sock.sendto(message, (self.udp_host, self.udp_port))
         except Exception as e:
             raise RuntimeError(f"Failed to send APM data over UDP: {e}")

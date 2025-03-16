@@ -1,21 +1,19 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="rabbit-logger",
+    name="udp-logger",
     version="1.0.0",
-    description="APM and logging library with RabbitMQ integration",
+    description="APM and logging library with UDP integration",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
-    url="https://github.com/single-service/rabbit-logger.git",  # Укажите ссылку на репозиторий
-    author="Aleksey",
-    author_email="your.email@example.com",
+    url="https://github.com/single-service/udp-logger.git",  # Укажите ссылку на репозиторий
+    author="Aleksey Rybkin, Dmitriy Sosedov",
+    author_email="singleservice2022@gmail.com",
     license="MIT",
     packages=find_packages(),  # Найдет все пакеты в проекте
     install_requires=[
         "typing_extensions",
-        "pika",       # RabbitMQ клиент
         "psutil",     # Для мониторинга ресурсов
-        "aio_pika",   # Асинхронный RabbitMQ клиент
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
