@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="udp-logger",
+    name="udp_logger",
     version="1.0.0",
     description="APM and logging library with UDP integration",
     long_description=open("README.md").read(),

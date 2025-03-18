@@ -6,3 +6,4 @@ build/
 venv/*
 setup.cfg
 test.py
+.env
