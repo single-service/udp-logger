@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="udp-mongo-logger",
-    version="1.0.1",
+    version="1.0.2",
     description="APM and logging library with UDP integration",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
